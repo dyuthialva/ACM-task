@@ -72,6 +72,28 @@ const initializeDatabase = () => {
 
   // Seed data if products table is empty
   seedProducts();
+
+  // Seed default admin user
+  seedAdmin();
+};
+
+const seedAdmin = () => {
+  const bcrypt = require('bcryptjs');
+  const countRow = db.prepare('SELECT COUNT(*) AS count FROM users').get();
+  if (countRow.count > 0) {
+    console.log('Users table already has data. Admin seeding skipped.');
+    return;
+  }
+
+  console.log('Users table is empty. Seeding default Admin account...');
+  const adminPasswordHash = bcrypt.hashSync('Admin123!', 10);
+
+  db.prepare(`
+    INSERT INTO users (name, email, password, role)
+    VALUES (?, ?, ?, ?)
+  `).run('Admin User', 'admin@nicemart.com', adminPasswordHash, 'admin');
+
+  console.log('Default Admin user seeded successfully.');
 };
 
 const seedProducts = () => {

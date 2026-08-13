@@ -7,6 +7,7 @@ const path = require('path');
 const db = require('./backend/database');
 
 const productRoutes = require('./backend/routes/productRoutes');
+const authRoutes = require('./backend/routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,6 +20,7 @@ app.use(express.json());
 
 // Register routes
 app.use('/api/products', productRoutes);
+app.use('/api/auth', authRoutes);
 
 // Root route welcome message
 app.get('/', (req, res) => {
