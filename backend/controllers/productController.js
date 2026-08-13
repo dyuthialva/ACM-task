@@ -1,19 +1,27 @@
 const db = require('../database');
 
 // Helper to validate product fields
-const validateProductInputs = (name, price, category, stock) => {
+const validateProductInputs = (name, price, category, description, image, stock) => {
   const errors = [];
 
   if (typeof name !== 'string' || name.trim() === '') {
     errors.push('Product name is required and must be a non-empty string.');
   }
 
-  if (price === undefined || price === null || typeof price !== 'number' || price < 0) {
-    errors.push('Price is required and must be a number greater than or equal to 0.');
+  if (price === undefined || price === null || typeof price !== 'number' || price <= 0) {
+    errors.push('Price is required and must be a positive number greater than 0.');
   }
 
-  if (category === undefined || category === null || typeof category !== 'string' || category.trim() === '') {
+  if (typeof category !== 'string' || category.trim() === '') {
     errors.push('Category is required and must be a non-empty string.');
+  }
+
+  if (typeof description !== 'string' || description.trim() === '') {
+    errors.push('Description is required and must be a non-empty string.');
+  }
+
+  if (typeof image !== 'string' || image.trim() === '') {
+    errors.push('Image URL is required and must be a non-empty string.');
   }
 
   if (stock === undefined || stock === null || !Number.isInteger(stock) || stock < 0) {
@@ -41,10 +49,10 @@ exports.getProducts = (req, res, next) => {
     const conditions = [];
     const params = [];
 
-    // 1. Search filter (in name or description)
+    // 1. Search filter (by name)
     if (search) {
-      conditions.push('(name LIKE ? OR description LIKE ?)');
-      params.push(`%${search}%`, `%${search}%`);
+      conditions.push('name LIKE ?');
+      params.push(`%${search}%`);
     }
 
     // 2. Category filter
@@ -62,8 +70,8 @@ exports.getProducts = (req, res, next) => {
     const allowedSorts = {
       price_asc: 'ORDER BY price ASC',
       price_desc: 'ORDER BY price DESC',
-      name_asc: 'ORDER BY name ASC',
-      name_desc: 'ORDER BY name DESC'
+      name_asc: 'ORDER BY name COLLATE NOCASE ASC',
+      name_desc: 'ORDER BY name COLLATE NOCASE DESC'
     };
 
     if (sort && allowedSorts[sort]) {
@@ -103,7 +111,7 @@ exports.createProduct = (req, res, next) => {
   try {
     const { name, price, category, description, image, stock } = req.body;
 
-    const validationErrors = validateProductInputs(name, price, category, stock);
+    const validationErrors = validateProductInputs(name, price, category, description, image, stock);
     if (validationErrors.length > 0) {
       return res.status(400).json({ errors: validationErrors });
     }
@@ -117,8 +125,8 @@ exports.createProduct = (req, res, next) => {
       name,
       price,
       category,
-      description || null,
-      image || null,
+      description,
+      image,
       stock
     );
 
@@ -140,7 +148,7 @@ exports.updateProduct = (req, res, next) => {
 
     const { name, price, category, description, image, stock } = req.body;
 
-    const validationErrors = validateProductInputs(name, price, category, stock);
+    const validationErrors = validateProductInputs(name, price, category, description, image, stock);
     if (validationErrors.length > 0) {
       return res.status(400).json({ errors: validationErrors });
     }
@@ -161,8 +169,8 @@ exports.updateProduct = (req, res, next) => {
       name,
       price,
       category,
-      description || null,
-      image || null,
+      description,
+      image,
       stock,
       id
     );
