@@ -2,12 +2,23 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, ShoppingCart, CheckCircle, AlertTriangle, AlertCircle, XCircle } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
 export default function ProductDetails() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const { cart, addToCart } = useCart();
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -31,7 +42,18 @@ export default function ProductDetails() {
   }, [id]);
 
   const handleAddToCart = () => {
-    alert('Cart functionality is coming in the next commit!');
+    if (!product) return;
+    const result = addToCart(product, 1);
+    if (result.success) {
+      setToast({ type: 'success', message: `${product.name} added to cart!` });
+    } else {
+      if (result.error === 'exceeds_stock') {
+        setToast({
+          type: 'error',
+          message: `Cannot add more. Limit of ${result.maxStock} items reached (exceeds available stock).`
+        });
+      }
+    }
   };
 
   const renderStockBadge = () => {
@@ -97,8 +119,24 @@ export default function ProductDetails() {
     );
   }
 
+  const cartItem = cart.find((item) => item.id === product?.id);
+  const currentInCart = cartItem ? cartItem.quantity : 0;
+  const isOutOfStock = product?.stock === 0;
+  const isLimitReached = currentInCart >= (product?.stock || 0);
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-900 text-slate-100 py-12 px-4 sm:px-6 lg:px-8">
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-20 right-4 z-50 flex items-center gap-2 px-5 py-3.5 rounded-2xl border text-sm font-semibold shadow-2xl transition-all duration-300 ${
+          toast.type === 'success'
+            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+            : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+        }`}>
+          {toast.type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+          <span>{toast.message}</span>
+        </div>
+      )}
       <div className="max-w-5xl mx-auto">
         {/* Back Button */}
         <Link
@@ -158,15 +196,21 @@ export default function ProductDetails() {
             {/* Add to Cart button */}
             <button
               onClick={handleAddToCart}
-              disabled={product.stock === 0}
+              disabled={isOutOfStock || isLimitReached}
               className={`w-full flex items-center justify-center gap-3 px-8 py-4 text-base font-bold rounded-2xl transition-all duration-300 shadow-lg ${
-                product.stock === 0
+                isOutOfStock || isLimitReached
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-850'
                   : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20 hover:shadow-indigo-600/30 active:scale-95'
               }`}
             >
               <ShoppingCart className="h-5 w-5" />
-              <span>{product.stock === 0 ? 'Sold Out' : 'Add to Cart'}</span>
+              <span>
+                {isOutOfStock
+                  ? 'Sold Out'
+                  : isLimitReached
+                  ? 'Limit Reached (All in Cart)'
+                  : 'Add to Cart'}
+              </span>
             </button>
           </div>
         </div>

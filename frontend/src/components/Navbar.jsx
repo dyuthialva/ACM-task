@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ShoppingCart, User, Menu, X, Store } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { totalItems } = useCart();
 
   const handleFeatureAlert = (feature) => {
     alert(`${feature} functionality is coming in the next commit!`);
@@ -50,15 +52,15 @@ export default function Navbar() {
 
           {/* User Icons / Cart - Desktop */}
           <div className="hidden md:flex items-center space-x-6">
-            <button
-              onClick={() => handleFeatureAlert('Cart')}
+            <Link
+              to="/cart"
               className="relative p-2 text-slate-300 hover:text-indigo-400 hover:bg-slate-800/50 rounded-full transition-all duration-300"
             >
               <ShoppingCart className="h-6 w-6" />
               <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-pink-500 text-[10px] font-bold text-white ring-2 ring-slate-900">
-                0
+                {totalItems}
               </span>
-            </button>
+            </Link>
             <button
               onClick={() => handleFeatureAlert('Authentication')}
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-100 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-xl transition-all duration-300 shadow-md"
@@ -103,16 +105,14 @@ export default function Navbar() {
               Products
             </Link>
             <hr className="border-slate-800 my-2" />
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                handleFeatureAlert('Cart');
-              }}
+            <Link
+              to="/cart"
+              onClick={() => setIsOpen(false)}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold text-slate-300 hover:bg-slate-800 hover:text-indigo-400 transition-colors"
             >
               <ShoppingCart className="h-5 w-5" />
-              <span>Cart (0)</span>
-            </button>
+              <span>Cart ({totalItems})</span>
+            </Link>
             <button
               onClick={() => {
                 setIsOpen(false);
