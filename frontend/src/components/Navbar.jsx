@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, Store, LogOut, Shield } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Store, LogOut, Shield, Package } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -46,6 +46,16 @@ export default function Navbar() {
             >
               Products
             </Link>
+            {isAuthenticated && (
+              <Link
+                to="/orders"
+                className={`text-sm font-semibold transition-all duration-300 hover:text-indigo-400 ${
+                  isActive('/orders') ? 'text-indigo-400 border-b-2 border-indigo-400 pb-1' : 'text-slate-300'
+                }`}
+              >
+                My Orders
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 to="/admin"
@@ -159,6 +169,16 @@ export default function Navbar() {
               <ShoppingCart className="h-5 w-5" />
               <span>Cart ({totalItems})</span>
             </Link>
+            {isAuthenticated && (
+              <Link
+                to="/orders"
+                onClick={() => setIsOpen(false)}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold text-slate-300 hover:bg-slate-800 hover:text-indigo-400 transition-colors"
+              >
+                <Package className="h-5 w-5" />
+                <span>My Orders</span>
+              </Link>
+            )}
             
             {isAuthenticated ? (
               <>
