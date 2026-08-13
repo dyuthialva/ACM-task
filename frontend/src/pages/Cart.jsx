@@ -1,9 +1,15 @@
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { Trash2, ShoppingBag, Plus, Minus, CreditCard, ChevronRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Trash2, ShoppingBag, Plus, Minus, CreditCard, ChevronRight, AlertCircle } from 'lucide-react';
 
 export default function Cart() {
   const { cart, updateQuantity, removeFromCart, clearCart, totalItems, totalAmount } = useCart();
+  const { isAuthenticated } = useAuth();
+
+  const handleClearCart = () => {
+    if (window.confirm('Remove all items from your cart? This cannot be undone.')) clearCart();
+  };
 
   if (cart.length === 0) {
     return (
@@ -134,10 +140,10 @@ export default function Cart() {
             {/* Clear Cart Trigger */}
             <div className="flex justify-end">
               <button
-                onClick={clearCart}
+                onClick={handleClearCart}
                 className="flex items-center gap-2 px-5 py-3 text-sm font-semibold text-rose-400 hover:text-rose-350 bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/15 rounded-2xl transition-all duration-300 shadow-md"
               >
-                <Trash2 className="h-4.5 w-4.5" />
+                <Trash2 className="h-4 w-4" />
                 <span>Clear Entire Cart</span>
               </button>
             </div>
@@ -167,13 +173,25 @@ export default function Cart() {
               </div>
             </div>
 
-            <div className="pt-4">
+            {/* Not logged in warning */}
+            {!isAuthenticated && (
+              <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/15 rounded-2xl text-amber-400 text-sm">
+                <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                <span>
+                  You must be{' '}
+                  <Link to="/login" className="font-bold underline hover:text-amber-300">logged in</Link>
+                  {' '}to place an order.
+                </span>
+              </div>
+            )}
+
+            <div className="pt-2">
               <Link
-                to="/checkout"
+                to={isAuthenticated ? '/checkout' : '/login'}
                 className="w-full flex items-center justify-center gap-3 px-6 py-4 text-base font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-2xl transition-all duration-300 shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/35 hover:scale-[1.02] active:scale-95"
               >
                 <CreditCard className="h-5 w-5" />
-                <span>Proceed to Checkout</span>
+                <span>{isAuthenticated ? 'Proceed to Checkout' : 'Login to Checkout'}</span>
               </Link>
             </div>
           </div>

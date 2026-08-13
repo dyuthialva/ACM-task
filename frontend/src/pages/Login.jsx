@@ -1,31 +1,62 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const validate = () => {
+    const errs = {};
+    if (!email.trim()) {
+      errs.email = 'Email address is required.';
+    } else if (!EMAIL_RE.test(email)) {
+      errs.email = 'Please enter a valid email address.';
+    }
+    if (!password) errs.password = 'Password is required.';
+    return errs;
+  };
+
+  const handleChange = (setter, field) => (e) => {
+    setter(e.target.value);
+    if (fieldErrors[field]) setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+    if (error) setError(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    setSubmitting(true);
 
-    const result = await login(email, password);
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      return;
+    }
+
+    setSubmitting(true);
+    const result = await login(email.trim(), password);
     setSubmitting(false);
 
     if (result.success) {
       navigate('/products');
     } else {
-      setError(result.error);
+      // Show a consistent, safe message — no leaking of which field was wrong
+      setError('Invalid email or password. Please try again.');
     }
   };
+
+  const inputClass = (field) =>
+    `w-full bg-slate-900 border ${fieldErrors[field] ? 'border-rose-500/70' : 'border-slate-700/60'} focus:border-indigo-500 rounded-xl py-3 pl-12 pr-12 text-sm text-slate-200 placeholder-slate-500 outline-none transition-colors`;
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-900 text-slate-100 flex items-center justify-center p-6">
@@ -40,7 +71,7 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Error Alert Box */}
+        {/* API Error */}
         {error && (
           <div className="flex items-start gap-3 p-4 bg-rose-500/10 border border-rose-500/15 rounded-2xl text-rose-400 text-sm mb-6">
             <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
@@ -48,24 +79,24 @@ export default function Login() {
           </div>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
           {/* Email */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
               Email Address
             </label>
             <div className="relative">
-              <Mail className="absolute top-1/2 left-4 -translate-y-1/2 h-5 w-5 text-slate-500" />
+              <Mail className="absolute top-1/2 left-4 -translate-y-1/2 h-5 w-5 text-slate-500 pointer-events-none" />
               <input
                 type="email"
-                required
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700/60 focus:border-indigo-500 rounded-xl py-3 pl-12 pr-4 text-sm text-slate-200 placeholder-slate-500 outline-none transition-colors"
+                onChange={handleChange(setEmail, 'email')}
+                className={inputClass('email').replace('pr-12', 'pr-4')}
+                autoComplete="email"
               />
             </div>
+            {fieldErrors.email && <p className="text-xs text-rose-400 mt-1.5">{fieldErrors.email}</p>}
           </div>
 
           {/* Password */}
@@ -74,23 +105,32 @@ export default function Login() {
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute top-1/2 left-4 -translate-y-1/2 h-5 w-5 text-slate-500" />
+              <Lock className="absolute top-1/2 left-4 -translate-y-1/2 h-5 w-5 text-slate-500 pointer-events-none" />
               <input
-                type="password"
-                required
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700/60 focus:border-indigo-500 rounded-xl py-3 pl-12 pr-4 text-sm text-slate-200 placeholder-slate-500 outline-none transition-colors"
+                onChange={handleChange(setPassword, 'password')}
+                className={inputClass('password')}
+                autoComplete="current-password"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(p => !p)}
+                className="absolute top-1/2 right-4 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
+            {fieldErrors.password && <p className="text-xs text-rose-400 mt-1.5">{fieldErrors.password}</p>}
           </div>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all duration-300 shadow-lg shadow-indigo-600/15 hover:shadow-indigo-600/25 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+            className="w-full flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all duration-300 shadow-lg shadow-indigo-600/15 hover:shadow-indigo-600/25 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 mt-2"
           >
             {submitting ? (
               <>
@@ -103,10 +143,9 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Footer Link */}
         <p className="mt-8 text-center text-sm text-slate-450">
           Don't have an account?{' '}
-          <Link to="/register" className="font-semibold text-indigo-400 hover:text-indigo-350 transition-colors">
+          <Link to="/register" className="font-semibold text-indigo-400 hover:text-indigo-300 transition-colors">
             Register now
           </Link>
         </p>
